@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum VehicleType {
+  CAR
+  MOTORCYCLE
+  RICKSHAW
+  CNG
+  DELIVERY
+  OTHER
+}
+
+model Driver {
+  id        String     @id @default(uuid())
+  name      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  vehicles  Vehicle[]
+  locations Location[]
+}
+
+model Vehicle {
+  id          String      @id @default(uuid())
+  driverId    String
+  vehicleType VehicleType
+  details     String
+  isTracking  Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  driver      Driver      @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  location    Location?
+
+  @@index([driverId])
+  @@index([isTracking])
+  @@index([vehicleType])
+}
+
+model Location {
+  id          String   @id @default(uuid())
+  vehicleId   String   @unique
+  driverId    String
+  lat         Float
+  lng         Float
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driver      Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@index([driverId])
+  @@index([lastUpdated])
+}
