@@ -85,7 +85,6 @@ Verify environment files in both folders. The repository is pre-configured with 
   CORS_ORIGIN=http://localhost:3000,http://localhost:5173,http://localhost:5174
   THROTTLE_TTL_MS=60000
   THROTTLE_LIMIT=120
-  DATABASE_URL="postgresql://neondb_owner:npg_ABSlU1trxa4M@ep-damp-boat-at9g0xuh-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
   ```
 
   _(Database schema migrations are already pushed and fully set up. To rebuild or view the DB Studio, use `npm run db:studio --prefix backend`)_.
