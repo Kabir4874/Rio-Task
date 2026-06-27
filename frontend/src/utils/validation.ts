@@ -12,9 +12,12 @@ export const loginDriverSchema = z.object({
 });
 
 export const vehicleSchema = z.object({
-  vehicleType: z.enum(['CAR', 'MOTORCYCLE', 'RICKSHAW', 'CNG', 'DELIVERY'], {
-    message: 'Invalid vehicle type',
-  }),
+  vehicleType: z.enum(
+    ['CAR', 'MOTORCYCLE', 'RICKSHAW', 'CNG', 'DELIVERY', 'OTHER'],
+    {
+      message: 'Invalid vehicle type',
+    },
+  ),
   details: z
     .string()
     .trim()

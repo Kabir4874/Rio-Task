@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import type { ActiveVehicleResponse } from '../../types/types';
 import { RIO_DEEP_OFFICE } from '../../utils/utils';
@@ -10,48 +10,55 @@ interface UserMapProps {
 }
 
 // Helper to get marker icons based on type
-const createMarkerIcon = (type: string, label: string, isSelf = false) => {
-  const colors: Record<string, { bg: string; border: string; pulse: string }> =
-    {
-      CAR: {
-        bg: 'bg-blue-600',
-        border: 'border-blue-300',
-        pulse: 'bg-blue-400',
-      },
-      MOTORCYCLE: {
-        bg: 'bg-purple-600',
-        border: 'border-purple-300',
-        pulse: 'bg-purple-400',
-      },
-      RICKSHAW: {
-        bg: 'bg-amber-500',
-        border: 'border-amber-300',
-        pulse: 'bg-amber-400',
-      },
-      CNG: {
-        bg: 'bg-emerald-600',
-        border: 'border-emerald-300',
-        pulse: 'bg-emerald-400',
-      },
-      DELIVERY: {
-        bg: 'bg-indigo-600',
-        border: 'border-indigo-300',
-        pulse: 'bg-indigo-400',
-      },
-      OTHER: {
-        bg: 'bg-rose-600',
-        border: 'border-rose-300',
-        pulse: 'bg-rose-400',
-      },
-    };
+const createMarkerIcon = (type: string, isSelf = false) => {
+  const icons: Record<string, string> = {
+    CAR: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14l-1.5-5h-11L5 17Z"/><path d="M7 17v2M17 17v2M7 12l1.5-4h7L17 12"/></svg>',
+    MOTORCYCLE:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h3l3-5h2M11 12h4l-2-3h-3"/></svg>',
+    RICKSHAW:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/><path d="M5 14h13l-2-6H8L5 14Z"/></svg>',
+    CNG: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/><path d="M5 14h13l-2-6H8L5 14Z"/></svg>',
+    DELIVERY:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16V8h11v8H3Z"/><path d="M14 16h7v-5l-3-3h-4v8Z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>',
+    OTHER:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 5v8l-8 5-8-5V8l8-5Z"/></svg>',
+  };
+  const colors: Record<string, { bg: string; ring: string }> = {
+    CAR: {
+      bg: '#2563eb',
+      ring: '#93c5fd',
+    },
+    MOTORCYCLE: {
+      bg: '#7c3aed',
+      ring: '#c4b5fd',
+    },
+    RICKSHAW: {
+      bg: '#f59e0b',
+      ring: '#fcd34d',
+    },
+    CNG: {
+      bg: '#059669',
+      ring: '#6ee7b7',
+    },
+    DELIVERY: {
+      bg: '#4f46e5',
+      ring: '#a5b4fc',
+    },
+    OTHER: {
+      bg: '#e11d48',
+      ring: '#fda4af',
+    },
+  };
 
-  const c = colors[type.toUpperCase()] || colors.OTHER;
+  const vehicleType = type.toUpperCase();
+  const c = colors[vehicleType] || colors.OTHER;
+  const icon = icons[vehicleType] || icons.OTHER;
 
   return L.divIcon({
     html: `
-      <div class="relative w-10 h-10 flex items-center justify-center rounded-full border-2 border-white ${c.bg} ${c.border} custom-marker-pin shadow-lg text-white font-bold text-xs select-none">
-        <span class="pulse-dot ${isSelf ? 'bg-red-400 animate-ping' : c.pulse}"></span>
-        <span class="z-10">${label.substring(0, 3).toUpperCase()}</span>
+      <div class="vehicle-marker" style="background:${c.bg}; --marker-ring:${isSelf ? '#f87171' : c.ring}">
+        <span class="vehicle-marker-pulse"></span>
+        <span class="vehicle-marker-icon">${icon}</span>
       </div>
     `,
     className: 'custom-div-icon',
@@ -59,6 +66,19 @@ const createMarkerIcon = (type: string, label: string, isSelf = false) => {
     iconAnchor: [20, 20],
   });
 };
+
+const createUserLocationIcon = () =>
+  L.divIcon({
+    html: `
+      <div class="user-location-marker">
+        <span class="user-location-pulse"></span>
+        <span class="user-location-dot"></span>
+      </div>
+    `,
+    className: 'custom-user-location-icon',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
 
 export function UserMap({
   activeVehicles,
@@ -69,6 +89,64 @@ export function UserMap({
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
   const polylinesRef = useRef<Record<string, L.Polyline>>({});
+  const userLocationMarkerRef = useRef<L.Marker | null>(null);
+  // ponytail: Initialize locationStatus directly from localStorage to prevent synchronous setState inside useEffect.
+  const [locationStatus, setLocationStatus] = useState<
+    'idle' | 'locating' | 'ready' | 'unavailable' | 'unsupported'
+  >(() => {
+    const saved = localStorage.getItem('rio_user_location');
+    if (saved) {
+      try {
+        JSON.parse(saved);
+        return 'ready';
+      } catch {
+        localStorage.removeItem('rio_user_location');
+      }
+    }
+    return 'idle';
+  });
+
+  const showUserLocation = useCallback((position: GeolocationPosition) => {
+    if (!mapRef.current) return;
+
+    const coords: L.LatLngExpression = [
+      position.coords.latitude,
+      position.coords.longitude,
+    ];
+    const icon = createUserLocationIcon();
+    localStorage.setItem('rio_user_location', JSON.stringify(coords));
+
+    if (userLocationMarkerRef.current) {
+      userLocationMarkerRef.current.setLatLng(coords);
+      userLocationMarkerRef.current.setIcon(icon);
+    } else {
+      userLocationMarkerRef.current = L.marker(coords, { icon })
+        .addTo(mapRef.current)
+        .bindPopup('<b>Your Current Location</b>');
+    }
+
+    setLocationStatus('ready');
+    mapRef.current.setView(coords, 15);
+  }, []);
+
+  const requestUserLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocationStatus('unsupported');
+      return;
+    }
+
+    setLocationStatus('locating');
+
+    navigator.geolocation.getCurrentPosition(
+      showUserLocation,
+      () => setLocationStatus('unavailable'),
+      {
+        enableHighAccuracy: false,
+        maximumAge: 30000,
+        timeout: 15000,
+      },
+    );
+  }, [showUserLocation]);
 
   // Initialize Map
   useEffect(() => {
@@ -89,25 +167,20 @@ export function UserMap({
 
       L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
 
-      // Plot office marker
-      const officeIcon = L.divIcon({
-        html: `
-          <div class="w-8 h-8 rounded-lg bg-slate-900 border-2 border-red-500 flex items-center justify-center text-white shadow-xl select-none font-bold">
-            <span class="text-xs">RIO</span>
-          </div>
-        `,
-        className: 'custom-office-icon',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-      });
-
-      L.marker([RIO_DEEP_OFFICE.lat, RIO_DEEP_OFFICE.lng], {
-        icon: officeIcon,
-      })
-        .addTo(mapRef.current)
-        .bindPopup(
-          '<b>Rio Deep Technologies Office</b><br/>9, Shahid Tajuddin Ahmed Sharani, Moghbazar',
-        );
+      const savedLocation = localStorage.getItem('rio_user_location');
+      if (savedLocation) {
+        try {
+          const coords = JSON.parse(savedLocation) as [number, number];
+          userLocationMarkerRef.current = L.marker(coords, {
+            icon: createUserLocationIcon(),
+          })
+            .addTo(mapRef.current)
+            .bindPopup('<b>Your Last Known Location</b>');
+          mapRef.current.setView(coords, 15);
+        } catch {
+          // handled by state initializer
+        }
+      }
     }
 
     return () => {
@@ -117,8 +190,9 @@ export function UserMap({
       }
       markersRef.current = {};
       polylinesRef.current = {};
+      userLocationMarkerRef.current = null;
     };
-  }, []);
+  }, [requestUserLocation]);
 
   // Sync Markers and Trails
   useEffect(() => {
@@ -133,8 +207,11 @@ export function UserMap({
         // Sync Marker
         if (markersRef.current[v.vehicle_id]) {
           markersRef.current[v.vehicle_id].setLatLng(position);
+          markersRef.current[v.vehicle_id].setIcon(
+            createMarkerIcon(v.vehicle_type),
+          );
         } else {
-          const markerIcon = createMarkerIcon(v.vehicle_type, v.vehicle_type);
+          const markerIcon = createMarkerIcon(v.vehicle_type);
           const marker = L.marker(position, { icon: markerIcon }).addTo(map);
 
           marker.bindPopup(`
@@ -224,10 +301,40 @@ export function UserMap({
   return (
     <div className="lg:col-span-3 h-full min-h-[500px] bg-white border border-slate-200 rounded-2xl overflow-hidden relative shadow-sm">
       <div className="absolute top-4 left-4 z-[400] px-3 py-1.5 bg-white/95 border border-slate-200 rounded-xl flex items-center gap-2 shadow-sm backdrop-blur-md">
-        <div className="w-2.5 h-2.5 bg-red-500 border border-red-300 rounded-sm"></div>
-        <span className="text-xs font-bold text-slate-700">
-          Rio Deep HQ (Anchor)
+        <span className="relative flex h-2.5 w-2.5">
+          {locationStatus === 'ready' && (
+            <>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600"></span>
+            </>
+          )}
+          {locationStatus === 'locating' && (
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500 animate-pulse"></span>
+          )}
+          {locationStatus === 'idle' && (
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-400"></span>
+          )}
+          {(locationStatus === 'unavailable' ||
+            locationStatus === 'unsupported') && (
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+          )}
         </span>
+        <span className="text-xs font-bold text-slate-700">
+          {locationStatus === 'ready' && 'Your Location'}
+          {locationStatus === 'idle' && 'Location Off'}
+          {locationStatus === 'locating' && 'Finding Your Location'}
+          {locationStatus === 'unavailable' && 'Location Unavailable'}
+          {locationStatus === 'unsupported' && 'Location Not Supported'}
+        </span>
+        {(locationStatus === 'idle' || locationStatus === 'unavailable') && (
+          <button
+            type="button"
+            onClick={requestUserLocation}
+            className="ml-1 text-[10px] font-black text-teal-700 hover:text-teal-900"
+          >
+            Retry
+          </button>
+        )}
       </div>
       <div ref={mapContainerRef} className="w-full h-full min-h-[500px]"></div>
     </div>

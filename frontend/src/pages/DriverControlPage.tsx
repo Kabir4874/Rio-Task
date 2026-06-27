@@ -42,6 +42,7 @@ export function DriverControlPage({
     vehicleLoading,
     driverMode,
     setDriverVehicle,
+    setDriverVehicles,
     setIsEditingVehicle,
     setEditingVehicleId,
     setRegisterName,
@@ -57,6 +58,7 @@ export function DriverControlPage({
     handleLoginDriver,
     handleAddVehicle,
     handleUpdateVehicle,
+    vehiclesListLoading,
   } = useDriverSession(
     showError,
     showSuccess,
@@ -64,23 +66,25 @@ export function DriverControlPage({
     setDriverPathHistory,
   );
 
-  const { isTrackingActive, handleToggleTracking } = useDriverTracking(
-    driverVehicle,
-    setDriverVehicle,
-    showError,
-    showSuccess,
-    simCoords,
-    setSimCoords,
-    driverPathHistory,
-    setDriverPathHistory,
-  );
+  const { isTrackingActive, trackingLoading, handleToggleTracking } =
+    useDriverTracking(
+      driverVehicle,
+      setDriverVehicle,
+      setDriverVehicles,
+      showError,
+      showSuccess,
+      simCoords,
+      setSimCoords,
+      driverPathHistory,
+      setDriverPathHistory,
+    );
 
   const handleLogout = () => {
     void logoutDriver(isTrackingActive, () => handleToggleTracking(false));
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center max-w-4xl mx-auto w-full">
+    <div className="flex-1 flex flex-col items-center justify-center w-full">
       {!driverSession ? (
         /* Registration / Login Box */
         <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xl glass-panel-light relative overflow-hidden">
@@ -141,7 +145,7 @@ export function DriverControlPage({
         /* Driver Workspace Dashboard */
         <div className="w-full space-y-6">
           {/* Top Profile Card */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-600 font-bold">
                 {driverSession.name.charAt(0).toUpperCase()}
@@ -158,16 +162,16 @@ export function DriverControlPage({
             </div>
             <button
               onClick={handleLogout}
-              className="text-xs font-bold px-2.5 py-1.5 hover:bg-rose-50/50 text-rose-600 rounded-lg transition-colors border border-rose-200"
+              className="w-full sm:w-auto text-xs font-bold px-4 py-2 hover:bg-rose-50/50 text-rose-600 rounded-lg transition-colors border border-rose-200"
             >
               Exit Session
             </button>
           </div>
 
           {/* Grid Layout: Vehicle Manager and Live Map */}
-          <div className="w-full grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] gap-6 items-start">
             {/* Left Col: Vehicle Manager */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="space-y-6">
               <VehicleManage
                 driverVehicles={driverVehicles}
                 driverVehicle={driverVehicle}
@@ -181,15 +185,17 @@ export function DriverControlPage({
                 vehicleDetails={vehicleDetails}
                 setVehicleDetails={setVehicleDetails}
                 vehicleLoading={vehicleLoading}
+                vehiclesListLoading={vehiclesListLoading}
                 handleAddVehicle={handleAddVehicle}
                 handleUpdateVehicle={handleUpdateVehicle}
                 isTrackingActive={isTrackingActive}
+                trackingLoading={trackingLoading}
                 handleToggleTracking={handleToggleTracking}
               />
             </div>
 
             {/* Right Col: Driver Map */}
-            <div className="lg:col-span-3 bg-white border border-slate-200 rounded-2xl overflow-hidden relative shadow-sm min-h-100">
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden relative shadow-sm min-h-[560px]">
               {/* Overlay for tracking status */}
               <div className="absolute top-4 left-4 z-400 px-3.5 py-2 bg-white/95 border border-slate-200 text-slate-700 rounded-xl flex items-center gap-2.5 shadow-sm backdrop-blur-md">
                 <span

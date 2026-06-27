@@ -42,7 +42,11 @@ export function useDriverSession(
   const [vehicleType, setVehicleType] = useState('CAR');
   const [vehicleDetails, setVehicleDetails] = useState('');
 
-  const { data: vehiclesData, refetch: fetchDriverVehicles } = useQuery({
+  const {
+    data: vehiclesData,
+    refetch: fetchDriverVehicles,
+    isLoading: vehiclesListLoading,
+  } = useQuery({
     queryKey: ['driverVehicles', driverSession?.driver_id],
     queryFn: async () => {
       if (!driverSession)
@@ -50,17 +54,23 @@ export function useDriverSession(
       return api.getMyVehicles();
     },
     enabled: !!driverSession,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache for my vehicles list
   });
 
   useEffect(() => {
     if (vehiclesData) {
+      const defaultVehicle =
+        vehiclesData.vehicles.find((vehicle) => vehicle.is_tracking) ||
+        vehiclesData.vehicles[0] ||
+        null;
+
       setDriverVehicles(vehiclesData.vehicles);
       setDriverVehicle((prev: Vehicle | null) => {
-        if (!prev) return vehiclesData.vehicles[0] || null;
+        if (!prev) return defaultVehicle;
         const updated = vehiclesData.vehicles.find(
           (v: Vehicle) => v.vehicle_id === prev.vehicle_id,
         );
-        return updated || vehiclesData.vehicles[0] || null;
+        return updated || defaultVehicle;
       });
     }
   }, [vehiclesData, setDriverVehicles, setDriverVehicle]);
@@ -128,6 +138,7 @@ export function useDriverSession(
     },
     onSuccess: (res) => {
       showSuccess(res.message);
+      setVehicleType('CAR');
       setVehicleDetails('');
       void fetchDriverVehicles();
       setDriverVehicle(res.vehicle);
@@ -159,6 +170,7 @@ export function useDriverSession(
       showSuccess(res.message);
       setIsEditingVehicle(false);
       setEditingVehicleId(null);
+      setVehicleType('CAR');
       setVehicleDetails('');
       void fetchDriverVehicles();
     },
@@ -215,6 +227,7 @@ export function useDriverSession(
       addVehicleMutation.isPending || updateVehicleMutation.isPending,
     driverMode,
     setDriverSession,
+    setDriverVehicles,
     setDriverVehicle,
     setIsEditingVehicle,
     setEditingVehicleId,
@@ -232,5 +245,6 @@ export function useDriverSession(
     handleAddVehicle,
     handleUpdateVehicle,
     fetchDriverVehicles,
+    vehiclesListLoading,
   };
 }

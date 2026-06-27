@@ -51,11 +51,32 @@ export class VehiclesService {
       throw new NotFoundException('Driver not found');
     }
 
-    const vehicles = await this.prisma.vehicle.findMany({
+    let vehicles = await this.prisma.vehicle.findMany({
       where: { driverId },
       orderBy: { createdAt: 'desc' },
       include: { driver: true, location: true },
     });
+    const activeVehicles = vehicles.filter((vehicle) => vehicle.isTracking);
+
+    if (activeVehicles.length > 1) {
+      const latestActiveVehicle = activeVehicles.sort(
+        (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
+      )[0];
+
+      await this.prisma.vehicle.updateMany({
+        where: {
+          driverId,
+          isTracking: true,
+          id: { not: latestActiveVehicle.id },
+        },
+        data: { isTracking: false },
+      });
+
+      vehicles = vehicles.map((vehicle) => ({
+        ...vehicle,
+        isTracking: vehicle.id === latestActiveVehicle.id,
+      }));
+    }
 
     return {
       driver_id: driverId,

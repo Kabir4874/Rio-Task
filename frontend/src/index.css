@@ -22,7 +22,72 @@
   background-color: #f8fafc !important; /* matches slate-50 */
 }
 
+.leaflet-control-container {
+  z-index: 400;
+}
+
 /* Custom Marker Styling */
+.custom-div-icon {
+  background: transparent;
+  border: 0;
+}
+
+.vehicle-marker {
+  --marker-ring: #93c5fd;
+  position: relative;
+  display: flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--marker-ring) 45%, transparent),
+    0 12px 24px -10px rgb(15 23 42 / 0.55);
+  color: #fff;
+}
+
+.vehicle-marker-pulse {
+  position: absolute;
+  inset: -7px;
+  border-radius: inherit;
+  background: var(--marker-ring);
+  animation: marker-pulse 1.8s ease-out infinite;
+  opacity: 0.35;
+}
+
+.vehicle-marker-icon {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+}
+
+.vehicle-marker-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+@keyframes marker-pulse {
+  from {
+    transform: scale(0.75);
+    opacity: 0.45;
+  }
+  to {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
 .custom-marker-pin {
   display: flex;
   align-items: center;

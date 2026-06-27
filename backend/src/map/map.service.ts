@@ -21,9 +21,17 @@ export class MapService {
       },
     });
 
+    const latestVehicleByDriver = new Map<string, (typeof vehicles)[number]>();
+    vehicles.forEach((vehicle) => {
+      if (!latestVehicleByDriver.has(vehicle.driverId)) {
+        latestVehicleByDriver.set(vehicle.driverId, vehicle);
+      }
+    });
+    const activeVehicles = [...latestVehicleByDriver.values()];
+
     return {
-      count: vehicles.length,
-      vehicles: vehicles.map((vehicle) => ({
+      count: activeVehicles.length,
+      vehicles: activeVehicles.map((vehicle) => ({
         vehicle_id: vehicle.id,
         driver_id: vehicle.driverId,
         driver_name: vehicle.driver.name,

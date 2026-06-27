@@ -3,7 +3,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { VehicleTypeValue } from '../common/vehicle-types';
+import { formatVehicleType, VehicleTypeValue } from '../common/vehicle-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { UpdateTrackingStatusDto } from './dto/update-tracking-status.dto';
@@ -18,10 +18,23 @@ export class TrackingService {
       throw new UnauthorizedException('You do not own this vehicle');
     }
 
-    const updatedVehicle = await this.prisma.vehicle.update({
-      where: { id: dto.vehicle_id },
-      data: { isTracking: dto.is_tracking },
-      include: { driver: true, location: true },
+    const updatedVehicle = await this.prisma.$transaction(async (tx) => {
+      if (dto.is_tracking) {
+        await tx.vehicle.updateMany({
+          where: {
+            driverId: vehicle.driverId,
+            id: { not: dto.vehicle_id },
+            isTracking: true,
+          },
+          data: { isTracking: false },
+        });
+      }
+
+      return tx.vehicle.update({
+        where: { id: dto.vehicle_id },
+        data: { isTracking: dto.is_tracking },
+        include: { driver: true, location: true },
+      });
     });
 
     return {
@@ -106,6 +119,7 @@ export class TrackingService {
       driver_id: vehicle.driverId,
       driver_name: vehicle.driver?.name,
       vehicle_type: vehicle.vehicleType,
+      vehicle_type_label: formatVehicleType(vehicle.vehicleType),
       details: vehicle.details,
       is_tracking: vehicle.isTracking,
       location: vehicle.location
