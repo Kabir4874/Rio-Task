@@ -1,0 +1,7 @@
+node_modules
+dist
+coverage
+.husky
+package-lock.json
+*.db
+prisma/schema.prisma

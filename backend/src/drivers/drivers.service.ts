@@ -1,24 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { RegisterDriverDto } from './dto/register-driver.dto';
 
 @Injectable()
 export class DriversService {
   constructor(private readonly prisma: PrismaService) {}
-
-  async register(dto: RegisterDriverDto) {
-    const driver = await this.prisma.driver.create({
-      data: {
-        name: dto.name.trim(),
-      },
-    });
-
-    return {
-      message: 'Driver registered successfully',
-      driver_id: driver.id,
-      driver: this.toResponse(driver),
-    };
-  }
 
   async findAll() {
     const drivers = await this.prisma.driver.findMany({
