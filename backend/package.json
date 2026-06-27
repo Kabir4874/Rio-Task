@@ -23,7 +23,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json --watchman=false",
     "verify": "npm run lint:check && npm run format:check && npm run build && npm test -- --runInBand",
     "precommit": "lint-staged && npm run build && npm test -- --runInBand",
-    "prepare": "cd .. && husky .husky",
+    "prepare": "node -e \"if (process.env.NODE_ENV !== 'production' && !process.env.CI) { try { require('child_process').execSync('cd .. && husky', { stdio: 'inherit' }) } catch (e) {} }\"",
     "prisma:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:studio": "prisma studio"
