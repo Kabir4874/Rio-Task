@@ -59,13 +59,18 @@ export function useDriverSession(
 
   useEffect(() => {
     if (vehiclesData) {
+      const defaultVehicle =
+        vehiclesData.vehicles.find((vehicle) => vehicle.is_tracking) ||
+        vehiclesData.vehicles[0] ||
+        null;
+
       setDriverVehicles(vehiclesData.vehicles);
       setDriverVehicle((prev: Vehicle | null) => {
-        if (!prev) return vehiclesData.vehicles[0] || null;
+        if (!prev) return defaultVehicle;
         const updated = vehiclesData.vehicles.find(
           (v: Vehicle) => v.vehicle_id === prev.vehicle_id,
         );
-        return updated || vehiclesData.vehicles[0] || null;
+        return updated || defaultVehicle;
       });
     }
   }, [vehiclesData, setDriverVehicles, setDriverVehicle]);
