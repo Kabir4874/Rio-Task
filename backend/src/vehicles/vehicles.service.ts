@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import {
   formatVehicleType,
   normalizeVehicleType,
@@ -23,7 +27,7 @@ export class VehiclesService {
 
     const vehicle = await this.prisma.vehicle.create({
       data: {
-        driverId: dto.driver_id,
+        driverId: dto.driver_id!,
         vehicleType: normalizeVehicleType(dto.vehicle_type),
         details: dto.details.trim(),
         isTracking: false,
@@ -60,10 +64,14 @@ export class VehiclesService {
     };
   }
 
-  async update(dto: UpdateVehicleDto) {
-    await this.ensureVehicleExists(dto.vehicle_id);
+  async update(driverId: string, dto: UpdateVehicleDto) {
+    const vehicle = await this.ensureVehicleExists(dto.vehicle_id);
 
-    const vehicle = await this.prisma.vehicle.update({
+    if (vehicle.driverId !== driverId) {
+      throw new ForbiddenException('You do not own this vehicle');
+    }
+
+    const updatedVehicle = await this.prisma.vehicle.update({
       where: { id: dto.vehicle_id },
       data: {
         vehicleType: normalizeVehicleType(dto.vehicle_type),
@@ -74,7 +82,7 @@ export class VehiclesService {
 
     return {
       message: 'Vehicle updated successfully',
-      vehicle: this.toResponse(vehicle),
+      vehicle: this.toResponse(updatedVehicle),
     };
   }
 

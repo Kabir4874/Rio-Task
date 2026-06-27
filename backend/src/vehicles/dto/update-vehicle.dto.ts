@@ -1,16 +1,28 @@
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { z } from 'zod';
+
+export const updateVehicleSchema = z.object({
+  vehicle_id: z.string().uuid('Invalid vehicle UUID format'),
+  vehicle_type: z.string().min(1, 'Vehicle type is required'),
+  details: z
+    .string()
+    .min(1, 'Details are required')
+    .max(240, 'Details must be at most 240 characters'),
+});
 
 export class UpdateVehicleDto {
-  @IsString()
-  @IsNotEmpty()
-  vehicle_id: string;
+  @ApiProperty({ example: 'vehicle-uuid' })
+  vehicle_id!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  vehicle_type: string;
+  @ApiProperty({
+    example: 'Motorcycle',
+    description: 'Car, Motorcycle, Rickshaw, CNG, Delivery, or Other',
+  })
+  vehicle_type!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(240)
-  details: string;
+  @ApiProperty({
+    example: 'Yamaha FZ - Dhaka Metro HA 22-3344',
+    maxLength: 240,
+  })
+  details!: string;
 }

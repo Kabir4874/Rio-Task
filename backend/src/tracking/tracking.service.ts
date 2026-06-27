@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { VehicleTypeValue } from '../common/vehicle-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateLocationDto } from './dto/update-location.dto';
@@ -8,8 +12,11 @@ import { UpdateTrackingStatusDto } from './dto/update-tracking-status.dto';
 export class TrackingService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async updateStatus(dto: UpdateTrackingStatusDto) {
+  async updateStatus(dto: UpdateTrackingStatusDto, driverId?: string) {
     const vehicle = await this.ensureVehicleExists(dto.vehicle_id);
+    if (driverId && vehicle.driverId !== driverId) {
+      throw new UnauthorizedException('You do not own this vehicle');
+    }
 
     const updatedVehicle = await this.prisma.vehicle.update({
       where: { id: dto.vehicle_id },
@@ -26,8 +33,11 @@ export class TrackingService {
     };
   }
 
-  async updateLocation(dto: UpdateLocationDto) {
+  async updateLocation(dto: UpdateLocationDto, driverId?: string) {
     const vehicle = await this.ensureVehicleExists(dto.vehicle_id);
+    if (driverId && vehicle.driverId !== driverId) {
+      throw new UnauthorizedException('You do not own this vehicle');
+    }
     const lat = Number(dto.lat);
     const lng = Number(dto.lng);
 
