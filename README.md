@@ -2,6 +2,12 @@
 
 Live multi-vehicle GPS tracking assessment project for Rio Deep Technologies.
 
+## Live Deployments
+
+- **Frontend App**: [rio-task-frontend.vercel.app](https://rio-task-frontend.vercel.app)
+- **Backend API**: [rio-task-backend.vercel.app](https://rio-task-backend.vercel.app)
+- **API Documentation (Swagger)**: [rio-task-backend.vercel.app/api/docs](https://rio-task-backend.vercel.app/api/docs)
+
 The app is a web-based prototype with two interfaces:
 
 - **Users** can view active vehicles on a live map, filter by vehicle type, inspect vehicle details, and see which driver owns each vehicle.
