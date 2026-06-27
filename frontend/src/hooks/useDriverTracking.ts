@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { api } from '../api';
 import { socket } from '../lib/socket';
 import { getDefaultStartCoords, simulateNextLocation } from '../utils/utils';
@@ -7,6 +7,9 @@ import type { Vehicle } from '../types/types';
 export function useDriverTracking(
   driverVehicle: Vehicle | null,
   setDriverVehicle: (v: Vehicle | null) => void,
+  setDriverVehicles: (
+    vehicles: Vehicle[] | ((prev: Vehicle[]) => Vehicle[]),
+  ) => void,
   showError: (msg: string) => void,
   showSuccess: (msg: string) => void,
   simCoords: { lat: number; lng: number } | null,
@@ -17,6 +20,7 @@ export function useDriverTracking(
   >,
 ) {
   const isTrackingActive = !!driverVehicle?.is_tracking;
+  const [trackingLoading, setTrackingLoading] = useState(false);
   const trackingIntervalRef = useRef<number | null>(null);
   const simCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
 
@@ -24,12 +28,24 @@ export function useDriverTracking(
     async (activeState: boolean) => {
       if (!driverVehicle) return;
 
+      setTrackingLoading(true);
       try {
         const res = await api.updateTrackingStatus(
           driverVehicle.vehicle_id,
           activeState,
         );
         setDriverVehicle(res.vehicle);
+        setDriverVehicles((vehicles) =>
+          vehicles.map((vehicle) => {
+            if (vehicle.vehicle_id === res.vehicle.vehicle_id) {
+              return { ...vehicle, ...res.vehicle };
+            }
+            if (res.is_tracking && vehicle.driver_id === res.driver_id) {
+              return { ...vehicle, is_tracking: false };
+            }
+            return vehicle;
+          }),
+        );
 
         if (res.is_tracking) {
           const currentCoords =
@@ -93,12 +109,15 @@ export function useDriverTracking(
         const msg =
           err instanceof Error ? err.message : 'Tracking update failed';
         showError(msg);
+      } finally {
+        setTrackingLoading(false);
       }
     },
     [
       driverVehicle,
       simCoords,
       setDriverVehicle,
+      setDriverVehicles,
       showError,
       showSuccess,
       setSimCoords,
@@ -127,17 +146,82 @@ export function useDriverTracking(
     return undefined;
   }, [simCoords, isTrackingActive, setDriverPathHistory]);
 
+  // Auto-resume simulation if active in state/backend on mount or change
+  useEffect(() => {
+    if (
+      driverVehicle &&
+      driverVehicle.is_tracking &&
+      !trackingIntervalRef.current
+    ) {
+      const currentCoords =
+        simCoords || getDefaultStartCoords(driverVehicle.vehicle_type);
+
+      setSimCoords(currentCoords);
+      simCoordsRef.current = currentCoords;
+
+      if (socket && socket.connected) {
+        socket.emit('updateLocation', {
+          vehicle_id: driverVehicle.vehicle_id,
+          lat: currentCoords.lat,
+          lng: currentCoords.lng,
+        });
+      } else {
+        void api.updateLocation(
+          driverVehicle.vehicle_id,
+          currentCoords.lat,
+          currentCoords.lng,
+        );
+      }
+
+      trackingIntervalRef.current = window.setInterval(() => {
+        if (simCoordsRef.current) {
+          const next = simulateNextLocation(
+            simCoordsRef.current.lat,
+            simCoordsRef.current.lng,
+          );
+          setSimCoords(next);
+          simCoordsRef.current = next;
+
+          if (socket && socket.connected) {
+            socket.emit('updateLocation', {
+              vehicle_id: driverVehicle.vehicle_id,
+              lat: next.lat,
+              lng: next.lng,
+            });
+          } else {
+            void api.updateLocation(
+              driverVehicle.vehicle_id,
+              next.lat,
+              next.lng,
+            );
+          }
+        }
+      }, 3000);
+    } else if (
+      driverVehicle &&
+      !driverVehicle.is_tracking &&
+      trackingIntervalRef.current
+    ) {
+      clearInterval(trackingIntervalRef.current);
+      trackingIntervalRef.current = null;
+    }
+    // ponytail: we explicitly omit simCoords and driverVehicle to avoid re-initializing the simulation interval on every tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [driverVehicle?.vehicle_id, driverVehicle?.is_tracking, setSimCoords]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (trackingIntervalRef.current) {
         clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
       }
     };
   }, []);
 
   return {
     isTrackingActive,
+    trackingLoading,
     simCoords,
     driverPathHistory,
     setSimCoords,

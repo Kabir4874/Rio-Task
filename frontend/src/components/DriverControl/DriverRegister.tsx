@@ -35,9 +35,10 @@ export function DriverRegister({
           <input
             type="text"
             placeholder="e.g. Rahim Uddin"
+            disabled={registerLoading}
             value={registerName}
             onChange={(e) => setRegisterName(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 placeholder-slate-400 focus:outline-none focus:border-teal-500 text-slate-900 text-sm font-medium"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 placeholder-slate-400 focus:outline-none focus:border-teal-500 text-slate-900 text-sm font-medium disabled:opacity-50"
             required
           />
         </div>
@@ -48,9 +49,10 @@ export function DriverRegister({
           <input
             type="email"
             placeholder="e.g. rahim@example.com"
+            disabled={registerLoading}
             value={registerEmail}
             onChange={(e) => setRegisterEmail(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 placeholder-slate-400 focus:outline-none focus:border-teal-500 text-slate-900 text-sm font-medium"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 placeholder-slate-400 focus:outline-none focus:border-teal-500 text-slate-900 text-sm font-medium disabled:opacity-50"
             required
           />
         </div>
@@ -61,9 +63,10 @@ export function DriverRegister({
           <input
             type="password"
             placeholder="••••••••"
+            disabled={registerLoading}
             value={registerPassword}
             onChange={(e) => setRegisterPassword(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 placeholder-slate-400 focus:outline-none focus:border-teal-500 text-slate-900 text-sm font-medium"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 placeholder-slate-400 focus:outline-none focus:border-teal-500 text-slate-900 text-sm font-medium disabled:opacity-50"
             required
           />
         </div>

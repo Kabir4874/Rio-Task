@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import type { Vehicle } from '../../types/types';
 import { RIO_DEEP_OFFICE } from '../../utils/utils';
@@ -9,48 +9,55 @@ interface DriverMapProps {
   driverPathHistory: [number, number][];
 }
 
-const createMarkerIcon = (type: string, label: string) => {
-  const colors: Record<string, { bg: string; border: string; pulse: string }> =
-    {
-      CAR: {
-        bg: 'bg-blue-600',
-        border: 'border-blue-300',
-        pulse: 'bg-blue-400',
-      },
-      MOTORCYCLE: {
-        bg: 'bg-purple-600',
-        border: 'border-purple-300',
-        pulse: 'bg-purple-400',
-      },
-      RICKSHAW: {
-        bg: 'bg-amber-500',
-        border: 'border-amber-300',
-        pulse: 'bg-amber-400',
-      },
-      CNG: {
-        bg: 'bg-emerald-600',
-        border: 'border-emerald-300',
-        pulse: 'bg-emerald-400',
-      },
-      DELIVERY: {
-        bg: 'bg-indigo-600',
-        border: 'border-indigo-300',
-        pulse: 'bg-indigo-400',
-      },
-      OTHER: {
-        bg: 'bg-rose-600',
-        border: 'border-rose-300',
-        pulse: 'bg-rose-400',
-      },
-    };
+const createMarkerIcon = (type: string) => {
+  const icons: Record<string, string> = {
+    CAR: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14l-1.5-5h-11L5 17Z"/><path d="M7 17v2M17 17v2M7 12l1.5-4h7L17 12"/></svg>',
+    MOTORCYCLE:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h3l3-5h2M11 12h4l-2-3h-3"/></svg>',
+    RICKSHAW:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/><path d="M5 14h13l-2-6H8L5 14Z"/></svg>',
+    CNG: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/><path d="M5 14h13l-2-6H8L5 14Z"/></svg>',
+    DELIVERY:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16V8h11v8H3Z"/><path d="M14 16h7v-5l-3-3h-4v8Z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>',
+    OTHER:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 5v8l-8 5-8-5V8l8-5Z"/></svg>',
+  };
+  const colors: Record<string, { bg: string; ring: string }> = {
+    CAR: {
+      bg: '#2563eb',
+      ring: '#93c5fd',
+    },
+    MOTORCYCLE: {
+      bg: '#7c3aed',
+      ring: '#c4b5fd',
+    },
+    RICKSHAW: {
+      bg: '#f59e0b',
+      ring: '#fcd34d',
+    },
+    CNG: {
+      bg: '#059669',
+      ring: '#6ee7b7',
+    },
+    DELIVERY: {
+      bg: '#4f46e5',
+      ring: '#a5b4fc',
+    },
+    OTHER: {
+      bg: '#e11d48',
+      ring: '#fda4af',
+    },
+  };
 
-  const c = colors[type.toUpperCase()] || colors.OTHER;
+  const vehicleType = type.toUpperCase();
+  const c = colors[vehicleType] || colors.OTHER;
+  const icon = icons[vehicleType] || icons.OTHER;
 
   return L.divIcon({
     html: `
-      <div class="relative w-10 h-10 flex items-center justify-center rounded-full border-2 border-white ${c.bg} ${c.border} custom-marker-pin shadow-lg text-white font-bold text-xs select-none">
-        <span class="pulse-dot bg-red-400 animate-ping"></span>
-        <span class="z-10">${label.substring(0, 3).toUpperCase()}</span>
+      <div class="vehicle-marker" style="background:${c.bg}; --marker-ring:${c.ring}">
+        <span class="vehicle-marker-pulse"></span>
+        <span class="vehicle-marker-icon">${icon}</span>
       </div>
     `,
     className: 'custom-div-icon',
@@ -68,6 +75,7 @@ export function DriverMap({
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const polylineRef = useRef<L.Polyline | null>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   // Initialize Map
   useEffect(() => {
@@ -90,6 +98,8 @@ export function DriverMap({
           ).addTo(mapRef.current);
 
           L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
+          mapRef.current.invalidateSize();
+          setMapReady(true);
         }
       }, 100);
     }
@@ -100,6 +110,7 @@ export function DriverMap({
         mapRef.current.remove();
         mapRef.current = null;
       }
+      setMapReady(false);
       markerRef.current = null;
       polylineRef.current = null;
     };
@@ -116,9 +127,12 @@ export function DriverMap({
       // Update/Create Marker
       if (markerRef.current) {
         markerRef.current.setLatLng(coords);
+        markerRef.current.setIcon(
+          createMarkerIcon(driverVehicle?.vehicle_type || 'VEH'),
+        );
       } else {
         const label = driverVehicle?.vehicle_type || 'VEH';
-        const icon = createMarkerIcon(label, label);
+        const icon = createMarkerIcon(label);
         markerRef.current = L.marker(coords, { icon }).addTo(map);
       }
 
@@ -140,11 +154,12 @@ export function DriverMap({
       }
 
       map.setView(coords, map.getZoom());
+      window.setTimeout(() => map.invalidateSize(), 0);
     }
-  }, [simCoords, driverPathHistory, driverVehicle]);
+  }, [simCoords, driverPathHistory, driverVehicle, mapReady]);
 
   return (
-    <div className="w-full h-80 rounded-2xl overflow-hidden border border-slate-200 shadow-inner relative bg-slate-100 mb-6">
+    <div className="w-full h-full min-h-[560px] overflow-hidden relative bg-slate-100">
       <div className="absolute top-4 left-4 z-[400] px-3 py-1.5 bg-white/95 border border-slate-200 rounded-xl flex items-center gap-2 shadow-sm backdrop-blur-md">
         <span className="relative flex h-2 w-2">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -154,7 +169,7 @@ export function DriverMap({
           Simulated Location
         </span>
       </div>
-      <div ref={mapContainerRef} className="w-full h-full"></div>
+      <div ref={mapContainerRef} className="w-full h-full min-h-[560px]"></div>
     </div>
   );
 }

@@ -31,6 +31,7 @@ export function useUserDashboard(showError: (msg: string) => void) {
       return res.vehicles;
     },
     enabled: true,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache since we update it in real-time via Socket.io
   });
 
   // Handle query fetching errors

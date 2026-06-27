@@ -31,9 +31,10 @@ export function DriverLogin({
           <input
             type="email"
             placeholder="e.g. rahim@example.com"
+            disabled={loginLoading}
             value={loginEmail}
             onChange={(e) => setLoginEmail(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 placeholder-slate-400 focus:outline-none focus:border-teal-500 text-slate-900 text-sm font-medium"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 placeholder-slate-400 focus:outline-none focus:border-teal-500 text-slate-900 text-sm font-medium disabled:opacity-50"
             required
           />
         </div>
@@ -44,9 +45,10 @@ export function DriverLogin({
           <input
             type="password"
             placeholder="••••••••"
+            disabled={loginLoading}
             value={loginPassword}
             onChange={(e) => setLoginPassword(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 placeholder-slate-400 focus:outline-none focus:border-teal-500 text-slate-900 text-sm font-medium"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 placeholder-slate-400 focus:outline-none focus:border-teal-500 text-slate-900 text-sm font-medium disabled:opacity-50"
             required
           />
         </div>

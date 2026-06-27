@@ -42,7 +42,11 @@ export function useDriverSession(
   const [vehicleType, setVehicleType] = useState('CAR');
   const [vehicleDetails, setVehicleDetails] = useState('');
 
-  const { data: vehiclesData, refetch: fetchDriverVehicles } = useQuery({
+  const {
+    data: vehiclesData,
+    refetch: fetchDriverVehicles,
+    isLoading: vehiclesListLoading,
+  } = useQuery({
     queryKey: ['driverVehicles', driverSession?.driver_id],
     queryFn: async () => {
       if (!driverSession)
@@ -50,6 +54,7 @@ export function useDriverSession(
       return api.getMyVehicles();
     },
     enabled: !!driverSession,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache for my vehicles list
   });
 
   useEffect(() => {
@@ -128,6 +133,7 @@ export function useDriverSession(
     },
     onSuccess: (res) => {
       showSuccess(res.message);
+      setVehicleType('CAR');
       setVehicleDetails('');
       void fetchDriverVehicles();
       setDriverVehicle(res.vehicle);
@@ -159,6 +165,7 @@ export function useDriverSession(
       showSuccess(res.message);
       setIsEditingVehicle(false);
       setEditingVehicleId(null);
+      setVehicleType('CAR');
       setVehicleDetails('');
       void fetchDriverVehicles();
     },
@@ -215,6 +222,7 @@ export function useDriverSession(
       addVehicleMutation.isPending || updateVehicleMutation.isPending,
     driverMode,
     setDriverSession,
+    setDriverVehicles,
     setDriverVehicle,
     setIsEditingVehicle,
     setEditingVehicleId,
@@ -232,5 +240,6 @@ export function useDriverSession(
     handleAddVehicle,
     handleUpdateVehicle,
     fetchDriverVehicles,
+    vehiclesListLoading,
   };
 }

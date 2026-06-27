@@ -1,12 +1,17 @@
 import {
   PlusCircle,
   Car,
+  Bike,
   Edit,
   Play,
   Square,
   CheckCircle,
   CarFront,
   ChevronDown,
+  Truck,
+  CircleDot,
+  RefreshCw,
+  X,
 } from 'lucide-react';
 import type { Vehicle } from '../../types/types';
 
@@ -23,11 +28,22 @@ interface VehicleManageProps {
   vehicleDetails: string;
   setVehicleDetails: (details: string) => void;
   vehicleLoading: boolean;
+  vehiclesListLoading: boolean;
   handleAddVehicle: (e: React.FormEvent) => void;
   handleUpdateVehicle: (e: React.FormEvent) => void;
   isTrackingActive: boolean;
+  trackingLoading: boolean;
   handleToggleTracking: (activeState: boolean) => Promise<void>;
 }
+
+const vehicleIcons = {
+  CAR: Car,
+  MOTORCYCLE: Bike,
+  RICKSHAW: CircleDot,
+  CNG: CircleDot,
+  DELIVERY: Truck,
+  OTHER: CarFront,
+};
 
 export function VehicleManage({
   driverVehicles,
@@ -42,133 +58,79 @@ export function VehicleManage({
   vehicleDetails,
   setVehicleDetails,
   vehicleLoading,
+  vehiclesListLoading,
   handleAddVehicle,
   handleUpdateVehicle,
   isTrackingActive,
+  trackingLoading,
   handleToggleTracking,
 }: VehicleManageProps) {
+  const closeEditModal = () => {
+    setIsEditingVehicle(false);
+    setEditingVehicleId(null);
+    setVehicleDetails('');
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-6">
       {/* Column 1: Manage Vehicles Form (Add / Edit) */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm h-fit">
-        {isEditingVehicle && editingVehicleId ? (
-          <div>
-            <div className="flex items-center justify-between mb-5 border-b border-slate-100 pb-2">
-              <div className="flex items-center gap-2 text-teal-600">
-                <Edit className="w-5 h-5" />
-                <h4 className="font-black text-slate-800 text-sm md:text-base">
-                  Edit Vehicle Info
-                </h4>
-              </div>
-              <button
-                onClick={() => {
-                  setIsEditingVehicle(false);
-                  setEditingVehicleId(null);
-                  setVehicleDetails('');
-                }}
-                className="text-xs text-slate-400 hover:text-slate-900 font-bold transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-            <form onSubmit={handleUpdateVehicle} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Vehicle Type
-                </label>
-                <div className="relative">
-                  <select
-                    value={vehicleType}
-                    onChange={(e) => setVehicleType(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 text-slate-700 cursor-pointer appearance-none pr-10"
-                  >
-                    <option value="CAR">Car</option>
-                    <option value="MOTORCYCLE">Motorcycle</option>
-                    <option value="RICKSHAW">Rickshaw</option>
-                    <option value="CNG">CNG</option>
-                    <option value="DELIVERY">Delivery Vehicle</option>
-                    <option value="OTHER">Other</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Details (Reg No / Info)
-                </label>
-                <input
-                  type="text"
-                  value={vehicleDetails}
-                  onChange={(e) => setVehicleDetails(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 text-slate-900"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={vehicleLoading}
-                className="w-full py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition-all duration-200 shadow-sm disabled:opacity-50 hover:-translate-y-0.5 hover:shadow-md text-xs active:translate-y-0"
-              >
-                {vehicleLoading ? 'Updating...' : 'Update Details'}
-              </button>
-            </form>
+        <div>
+          <div className="flex items-center gap-2 text-teal-600 mb-2">
+            <PlusCircle className="w-5 h-5" />
+            <h4 className="font-black text-slate-800 text-sm md:text-base">
+              Register New Vehicle
+            </h4>
           </div>
-        ) : (
-          <div>
-            <div className="flex items-center gap-2 text-teal-600 mb-2">
-              <PlusCircle className="w-5 h-5" />
-              <h4 className="font-black text-slate-800 text-sm md:text-base">
-                Register New Vehicle
-              </h4>
-            </div>
-            <p className="text-xs text-slate-500 mb-4">
-              Add details of another vehicle to your driver profile.
-            </p>
+          <p className="text-xs text-slate-500 mb-4">
+            Add details of another vehicle to your driver profile.
+          </p>
 
-            <form onSubmit={handleAddVehicle} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Vehicle Type
-                </label>
-                <div className="relative">
-                  <select
-                    value={vehicleType}
-                    onChange={(e) => setVehicleType(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 text-slate-700 cursor-pointer appearance-none pr-10"
-                  >
-                    <option value="CAR">Car</option>
-                    <option value="MOTORCYCLE">Motorcycle</option>
-                    <option value="RICKSHAW">Rickshaw</option>
-                    <option value="CNG">CNG</option>
-                    <option value="DELIVERY">Delivery Vehicle</option>
-                    <option value="OTHER">Other</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
+          <form onSubmit={handleAddVehicle} className="space-y-4">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                Vehicle Type
+              </label>
+              <div className="relative">
+                <select
+                  disabled={vehicleLoading}
+                  value={vehicleType}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 text-slate-700 cursor-pointer appearance-none pr-10 disabled:opacity-50"
+                >
+                  <option value="CAR">Car</option>
+                  <option value="MOTORCYCLE">Motorcycle</option>
+                  <option value="RICKSHAW">Rickshaw</option>
+                  <option value="CNG">CNG</option>
+                  <option value="DELIVERY">Delivery Vehicle</option>
+                  <option value="OTHER">Other</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
               </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Details (Reg No / Info)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Dhaka Metro CNG-12-3456"
-                  value={vehicleDetails}
-                  onChange={(e) => setVehicleDetails(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 text-slate-900 placeholder:text-slate-400"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                Details (Reg No / Info)
+              </label>
+              <input
+                type="text"
                 disabled={vehicleLoading}
-                className="w-full py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition-all duration-200 shadow-sm disabled:opacity-50 hover:-translate-y-0.5 hover:shadow-md text-xs active:translate-y-0"
-              >
-                {vehicleLoading ? 'Saving...' : 'Add Vehicle'}
-              </button>
-            </form>
-          </div>
-        )}
+                placeholder="e.g. Dhaka Metro CNG-12-3456"
+                value={vehicleDetails}
+                onChange={(e) => setVehicleDetails(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 text-slate-900 placeholder:text-slate-400 disabled:opacity-50"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={vehicleLoading}
+              className="w-full py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition-all duration-200 shadow-sm disabled:opacity-50 hover:-translate-y-0.5 hover:shadow-md text-xs active:translate-y-0"
+            >
+              {vehicleLoading ? 'Saving...' : 'Add Vehicle'}
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* Column 2: Vehicle Selection List & Active Control */}
@@ -182,7 +144,12 @@ export function VehicleManage({
             </h4>
           </div>
 
-          {driverVehicles.length === 0 ? (
+          {vehiclesListLoading ? (
+            <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+              <RefreshCw className="w-5 h-5 animate-spin mb-1.5 text-teal-500" />
+              <p className="text-[10px]">Loading vehicles...</p>
+            </div>
+          ) : driverVehicles.length === 0 ? (
             <p className="text-xs text-slate-400 italic text-center py-6">
               No vehicles registered yet. Use the register form to add one.
             </p>
@@ -207,13 +174,21 @@ export function VehicleManage({
                   >
                     <div className="flex items-start gap-3">
                       <div className="mt-0.5">
-                        <Car
-                          className={`w-5 h-5 ${isSelected ? 'text-teal-600' : 'text-slate-400'}`}
-                        />
+                        {(() => {
+                          const Icon =
+                            vehicleIcons[
+                              vehicle.vehicle_type as keyof typeof vehicleIcons
+                            ] || vehicleIcons.OTHER;
+                          return (
+                            <Icon
+                              className={`w-5 h-5 ${isSelected ? 'text-teal-600' : 'text-slate-400'}`}
+                            />
+                          );
+                        })()}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-black text-slate-800">
+                          <span className="text-xs font-black text-slate-800 break-all">
                             {vehicle.details}
                           </span>
                           <span className="text-[9px] font-bold bg-slate-100 border border-slate-200/80 px-1.5 py-0.5 rounded text-slate-600 uppercase">
@@ -237,14 +212,14 @@ export function VehicleManage({
                         <CheckCircle className="w-4 h-4 text-teal-600 animate-in fade-in zoom-in duration-200" />
                       )}
                       <button
-                        disabled={isTrackingActive}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setEditingVehicleId(vehicle.vehicle_id);
                           setVehicleType(vehicle.vehicle_type);
                           setVehicleDetails(vehicle.details);
                           setIsEditingVehicle(true);
                         }}
-                        className="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-700 border border-slate-200 rounded transition-colors disabled:opacity-50"
+                        className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-950 border border-slate-300 rounded-md transition-colors shadow-sm"
                         title="Edit Vehicle Details"
                       >
                         <Edit className="w-3.5 h-3.5" />
@@ -276,24 +251,111 @@ export function VehicleManage({
               {!isTrackingActive ? (
                 <button
                   onClick={() => void handleToggleTracking(true)}
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-md shadow-emerald-600/10 text-sm hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-600/15 active:translate-y-0"
+                  disabled={trackingLoading}
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-md shadow-emerald-600/10 text-sm hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-600/15 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
                 >
-                  <Play className="w-4.5 h-4.5 fill-current" />
-                  Start Live Tracking
+                  {trackingLoading ? (
+                    <RefreshCw className="w-4.5 h-4.5 animate-spin" />
+                  ) : (
+                    <Play className="w-4.5 h-4.5 fill-current" />
+                  )}
+                  {trackingLoading ? 'Starting...' : 'Start Live Tracking'}
                 </button>
               ) : (
                 <button
                   onClick={() => void handleToggleTracking(false)}
-                  className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-md shadow-rose-600/10 text-sm hover:-translate-y-0.5 hover:shadow-lg hover:shadow-rose-600/15 active:translate-y-0"
+                  disabled={trackingLoading}
+                  className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-md shadow-rose-600/10 text-sm hover:-translate-y-0.5 hover:shadow-lg hover:shadow-rose-600/15 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
                 >
-                  <Square className="w-4.5 h-4.5 fill-current" />
-                  Stop Live Tracking
+                  {trackingLoading ? (
+                    <RefreshCw className="w-4.5 h-4.5 animate-spin" />
+                  ) : (
+                    <Square className="w-4.5 h-4.5 fill-current" />
+                  )}
+                  {trackingLoading ? 'Stopping...' : 'Stop Live Tracking'}
                 </button>
               )}
             </div>
           </div>
         )}
       </div>
+
+      {isEditingVehicle && editingVehicleId && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-5">
+              <div className="flex items-center gap-2 text-teal-600">
+                <Edit className="w-5 h-5" />
+                <h4 className="font-black text-slate-800 text-base">
+                  Edit Vehicle Info
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={closeEditModal}
+                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-950 hover:bg-slate-100"
+                aria-label="Close edit vehicle modal"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateVehicle} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Vehicle Type
+                </label>
+                <div className="relative">
+                  <select
+                    disabled={vehicleLoading}
+                    value={vehicleType}
+                    onChange={(e) => setVehicleType(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 text-slate-700 cursor-pointer appearance-none pr-10 disabled:opacity-50"
+                  >
+                    <option value="CAR">Car</option>
+                    <option value="MOTORCYCLE">Motorcycle</option>
+                    <option value="RICKSHAW">Rickshaw</option>
+                    <option value="CNG">CNG</option>
+                    <option value="DELIVERY">Delivery Vehicle</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Details (Reg No / Info)
+                </label>
+                <input
+                  type="text"
+                  disabled={vehicleLoading}
+                  value={vehicleDetails}
+                  onChange={(e) => setVehicleDetails(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 text-slate-900 disabled:opacity-50"
+                  required
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={vehicleLoading}
+                  onClick={closeEditModal}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={vehicleLoading}
+                  className="flex-1 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition-all duration-200 shadow-sm disabled:opacity-50 text-xs"
+                >
+                  {vehicleLoading ? 'Updating...' : 'Update Details'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

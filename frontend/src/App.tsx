@@ -23,15 +23,15 @@ function App() {
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans antialiased selection:bg-teal-500 selection:text-slate-900">
       {/* Toast Messages */}
       {successMsg && (
-        <div className="fixed top-5 right-5 z-[9999] flex items-center gap-2 px-4 py-3 bg-emerald-500/95 border border-emerald-400 text-white rounded-xl shadow-2xl glass-panel-light animate-bounce">
+        <div className="fixed top-5 right-5 z-[9999] flex items-center gap-2 px-4 py-3 bg-emerald-500/95 border border-emerald-400 text-white rounded-xl shadow-2xl backdrop-blur-md animate-bounce">
           <CheckCircle className="w-5 h-5 text-emerald-100" />
-          <span className="text-sm font-semibold">{successMsg}</span>
+          <span className="text-sm font-semibold text-white">{successMsg}</span>
         </div>
       )}
       {errorMsg && (
-        <div className="fixed top-5 right-5 z-[9999] flex items-center gap-2 px-4 py-3 bg-rose-500/95 border border-rose-400 text-white rounded-xl shadow-2xl glass-panel-light">
+        <div className="fixed top-5 right-5 z-[9999] flex items-center gap-2 px-4 py-3 bg-rose-500/95 border border-rose-400 text-white rounded-xl shadow-2xl backdrop-blur-md">
           <MapPin className="w-5 h-5 rotate-45 animate-pulse text-rose-100" />
-          <span className="text-sm font-semibold">{errorMsg}</span>
+          <span className="text-sm font-semibold text-white">{errorMsg}</span>
         </div>
       )}
 
